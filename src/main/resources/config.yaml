@@ -1,0 +1,31 @@
+# TODO: Adjust values to the correct ones for the rule
+uppgift:
+  version: 1.0
+  path: /regel/maskinell
+  aktivitet: "Bedömma rätten till"
+
+specifikation:
+  id: 494726b5-5122-4efc-8a5d-578dcd44df0f
+  version: 1.0
+  namn: "Har kunden rätt till VAH?"
+  uppgiftbeskrivning: "Kontrollerar om personen är folkbokförd i Sverige samt om personen har ett jobb"
+  verksamhetslogik: C
+  roll: ANSVARIG_HANDLAGGARE
+  applikationsId: 3.5.2
+  applikationsversion: kontroll_folkbokford_arbetsgivare_1.0
+
+regel:
+  id: caf86a5f-9776-4fce-a854-8d365fa75067
+  version: 1.0
+  namn: "Har kunden arbetsgivare och är folkbokförd"
+  beskrivning: "Maskinell kontroll som kollar om kunden är folkbokförd i sverige samt kollar om personen har en arbetsgivare"
+
+lagrum:
+  id: 6955bd9b-2019-4589-a460-7bcfd8a43eb5
+  version: 1.0
+  giltigFom: 2010-02-11
+  forfattning: Husdjursbalken
+  kapitel: 4
+  paragraf: 7
+  stycke: 2
+  punkt: 3
