@@ -73,6 +73,7 @@ public class RegelService implements RegelRequestHandlerInterface
 
    private Utfall processRegelRequest(RegelDataRequest request) throws JsonProcessingException
    {
+
       /*
        * TODO: The actual rule implementation.
        *
