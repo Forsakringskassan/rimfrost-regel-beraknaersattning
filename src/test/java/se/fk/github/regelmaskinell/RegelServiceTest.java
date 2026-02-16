@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Enhetstester för regellogik - Vård av husdjur.
- *
  * Testar beräkningslogik och beslutregler utan Kafka-beroenden.
  */
 @QuarkusTest
