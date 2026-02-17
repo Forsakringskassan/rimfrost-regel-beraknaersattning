@@ -29,16 +29,16 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @QuarkusTestResource.List(
-{
-      @QuarkusTestResource(WireMockTestResource.class)
-})
+        {
+                @QuarkusTestResource(WireMockTestResource.class)
+        })
 public class RegelMaskinellTest
 {
 
    private static final String regelRequestsChannel = "regel-requests";
    private static final String regelResponsesChannel = "regel-responses";
    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
-         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
    private static WireMockServer wiremockServer;
 
    @Inject
@@ -75,9 +75,9 @@ public class RegelMaskinellTest
    }
 
    public static List<LoggedRequest> waitForWireMockRequest(
-         WireMockServer server,
-         String urlRegex,
-         int minRequests)
+           WireMockServer server,
+           String urlRegex,
+           int minRequests)
    {
       List<LoggedRequest> requests = Collections.emptyList();
       int retries = 20;
@@ -132,14 +132,14 @@ public class RegelMaskinellTest
 
    @ParameterizedTest
    @CsvSource(
-   {
-         "5367f6b8-cc4a-11f0-8de9-199901011234,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901013333,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901012222,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901014444,  Ja"
-   })
+           {
+                   "5367f6b8-cc4a-11f0-8de9-199901011234,  Ja",
+                   "5367f6b8-cc4a-11f0-8de9-199901013333,  Ja",
+                   "5367f6b8-cc4a-11f0-8de9-199901012222,  Ja",
+                   "5367f6b8-cc4a-11f0-8de9-199901014444,  Ja"
+           })
    void TestRegelMaskinell(String kundbehovsflodeId,
-         String expectedUtfall) throws Exception
+                           String expectedUtfall) throws Exception
    {
 
       // Clear out any previous requests

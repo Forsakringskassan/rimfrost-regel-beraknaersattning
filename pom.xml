@@ -35,7 +35,7 @@
     <dependency>
       <groupId>se.fk.rimfrost.api.arbetsgivare</groupId>
       <artifactId>rimfrost-arbetsgivare-api-jaxrs-spec</artifactId>
-      <version>1.2.0</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>se.fk.rimfrost.framework.arbetsgivare</groupId>
@@ -84,6 +84,11 @@
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
       <version>3.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5-mockito</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

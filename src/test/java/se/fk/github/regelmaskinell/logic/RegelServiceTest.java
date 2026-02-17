@@ -1,26 +1,64 @@
-package se.fk.github.regelmaskinell;
+package se.fk.github.regelmaskinell.logic;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import se.fk.github.regelmaskinell.logic.RegelService;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import se.fk.rimfrost.framework.regel.Utfall;
+import se.fk.rimfrost.framework.regel.integration.config.RegelConfigProvider;
+import se.fk.rimfrost.framework.regel.logic.config.RegelConfig;
+import se.fk.rimfrost.framework.regel.logic.config.Regel;
+import se.fk.rimfrost.framework.regel.logic.config.Lagrum;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Enhetstester för regellogik - Vård av husdjur.
- * Testar den riktiga beräkningslogiken i RegelService.
+ * Testar den riktiga beräkningslogiken i RegelService med Mockito.
  */
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RegelServiceTest {
 
-    private RegelService regelService;
+    @Mock
+    RegelConfigProvider regelConfigProvider;
+
+    @Mock
+    RegelConfig regelConfig;
+
+    @Mock
+    Regel regel;
+
+    @Mock
+    Lagrum lagrum;
+
+    @InjectMocks
+    RegelService regelService;
 
     @BeforeEach
     void setup() {
-        regelService = new RegelService();
+        when(regelConfigProvider.getConfig()).thenReturn(regelConfig);
+        when(regelConfig.getRegel()).thenReturn(regel);
+        when(regelConfig.getLagrum()).thenReturn(lagrum);
+        when(regel.getNamn()).thenReturn("Vard av husdjur");
+        when(regel.getVersion()).thenReturn("1.0");
+        when(regel.getId()).thenReturn(UUID.randomUUID());
+        when(lagrum.getForfattning()).thenReturn("Husdjursbalken");
+        when(lagrum.getKapitel()).thenReturn("4");
+        when(lagrum.getParagraf()).thenReturn("7");
+        when(lagrum.getStycke()).thenReturn("2");
+        when(lagrum.getPunkt()).thenReturn("3");
+
+        regelService.init();
     }
 
     // ============================================================
@@ -30,41 +68,31 @@ class RegelServiceTest {
     @Test
     @DisplayName("Beräkning: 40000 kr lön, 2 dagar, 100% omfattning = 8000 kr")
     void berakningMedTvaDagarFullOmfattning() {
-        // Given
-        var arbetsgivardata = new RegelService.ArbetsgivareData(
-                "Test AB", "123456-7890", 40000.0
-        );
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-02", 100, true),
                 new RegelService.ErsattningUnderlag("2", "2025-08-21", 100, true)
         );
 
-        // When
         var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
-        // Then
-        assertEquals(4000.0, resultat.dagsersattning(), "Dagsersättning ska vara 10% av 40000");
-        assertEquals(8000.0, resultat.totalErsattning(), "Total ersättning ska vara 2 × 4000");
-        assertEquals(2, resultat.antalDagar(), "Antal dagar ska vara 2");
+        assertEquals(4000.0, resultat.dagsersattning());
+        assertEquals(8000.0, resultat.totalErsattning());
+        assertEquals(2, resultat.antalDagar());
     }
 
     @Test
     @DisplayName("Beräkning: 50000 kr lön, 3 dagar = 15000 kr")
     void berakningMedTreDagar() {
-        // Given
-        var arbetsgivardata = new RegelService.ArbetsgivareData(
-                "Test AB", "123456-7890", 50000.0
-        );
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 50000.0);
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, true),
                 new RegelService.ErsattningUnderlag("2", "2025-08-02", 100, true),
                 new RegelService.ErsattningUnderlag("3", "2025-08-03", 100, true)
         );
 
-        // When
         var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
-        // Then
         assertEquals(5000.0, resultat.dagsersattning());
         assertEquals(15000.0, resultat.totalErsattning());
         assertEquals(3, resultat.antalDagar());
@@ -73,39 +101,56 @@ class RegelServiceTest {
     @Test
     @DisplayName("Beräkning: Halv omfattning (50%) ger halv ersättning")
     void berakningMedHalvOmfattning() {
-        // Given
-        var arbetsgivardata = new RegelService.ArbetsgivareData(
-                "Test AB", "123456-7890", 40000.0
-        );
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 50, true)
         );
 
-        // When
         var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
-        // Then
-        assertEquals(4000.0, resultat.dagsersattning(), "Dagsersättning är fortfarande 4000");
-        assertEquals(2000.0, resultat.totalErsattning(), "Men utbetalning blir 50% = 2000 kr");
+        assertEquals(4000.0, resultat.dagsersattning());
+        assertEquals(2000.0, resultat.totalErsattning());
     }
 
     @Test
     @DisplayName("Beräkning: Blandad omfattning (100% + 50%) = 6000 kr")
     void berakningMedBlandadOmfattning() {
-        // Given
-        var arbetsgivardata = new RegelService.ArbetsgivareData(
-                "Test AB", "123456-7890", 40000.0
-        );
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, true),
                 new RegelService.ErsattningUnderlag("2", "2025-08-02", 50, true)
         );
 
-        // When
         var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
-        // Then
         assertEquals(6000.0, resultat.totalErsattning());
+    }
+
+    @Test
+    @DisplayName("Beräkning: 0 kr lön ger 0 kr ersättning")
+    void berakningMedNollLon() {
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 0.0);
+        var underlag = List.of(
+                new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, true)
+        );
+
+        var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
+
+        assertEquals(0.0, resultat.dagsersattning());
+        assertEquals(0.0, resultat.totalErsattning());
+    }
+
+    @Test
+    @DisplayName("Beräkning: Inga underlag ger 0 kr ersättning")
+    void berakningUtanUnderlag() {
+        var arbetsgivardata = new RegelService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
+        List<RegelService.ErsattningUnderlag> underlag = List.of();
+
+        var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
+
+        assertEquals(4000.0, resultat.dagsersattning());
+        assertEquals(0.0, resultat.totalErsattning());
+        assertEquals(0, resultat.antalDagar());
     }
 
     // ============================================================
@@ -115,64 +160,101 @@ class RegelServiceTest {
     @Test
     @DisplayName("Validering: Alla underlag har beslutsutfall JA = inga fel")
     void valideringBifall() {
-        // Given
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, true),
                 new RegelService.ErsattningUnderlag("2", "2025-08-02", 100, true)
         );
 
-        // When
         var fel = regelService.valideraUnderlag(underlag);
 
-        // Then
-        assertTrue(fel.isEmpty(), "Ska inte ha några valideringsfel");
+        assertTrue(fel.isEmpty());
     }
 
     @Test
-    @DisplayName("Avslag: Ett underlag har beslutsutfall NEJ")
-    void avslagNarEttUnderlagHarBeslutsutfallNej() {
-        // Given
+    @DisplayName("Validering: Ett underlag har beslutsutfall NEJ")
+    void valideringEttUnderlagNej() {
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, true),
                 new RegelService.ErsattningUnderlag("2", "2025-08-02", 100, false)
         );
 
-        // When
         var fel = regelService.valideraUnderlag(underlag);
 
-        // Then
-        assertFalse(fel.isEmpty(), "Ska ha valideringsfel");
-        assertTrue(fel.get(0).contains("beslutsutfall"), "Felet ska nämna beslutsutfall");
+        assertEquals(1, fel.size());
+        assertTrue(fel.get(0).contains("beslutsutfall"));
     }
 
     @Test
-    @DisplayName("Avslag: Ogiltig omfattning (0%)")
-    void avslagVidOgiltigOmfattningNoll() {
-        // Given
+    @DisplayName("Validering: Alla underlag har beslutsutfall NEJ")
+    void valideringAllaUnderlagNej() {
+        var underlag = List.of(
+                new RegelService.ErsattningUnderlag("1", "2025-08-01", 100, false),
+                new RegelService.ErsattningUnderlag("2", "2025-08-02", 100, false)
+        );
+
+        var fel = regelService.valideraUnderlag(underlag);
+
+        assertEquals(2, fel.size());
+    }
+
+    @Test
+    @DisplayName("Validering: Ogiltig omfattning 0%")
+    void valideringOgiltigOmfattningNoll() {
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 0, true)
         );
 
-        // When
         var fel = regelService.valideraUnderlag(underlag);
 
-        // Then
-        assertFalse(fel.isEmpty(), "Ska ha valideringsfel för 0% omfattning");
+        assertEquals(1, fel.size());
+        assertTrue(fel.get(0).contains("ogiltig omfattning"));
     }
 
     @Test
-    @DisplayName("Avslag: Ogiltig omfattning (>100%)")
-    void avslagVidOgiltigOmfattningOver100() {
-        // Given
+    @DisplayName("Validering: Ogiltig omfattning >100%")
+    void valideringOgiltigOmfattningOver100() {
         var underlag = List.of(
                 new RegelService.ErsattningUnderlag("1", "2025-08-01", 150, true)
         );
 
-        // When
         var fel = regelService.valideraUnderlag(underlag);
 
-        // Then
-        assertFalse(fel.isEmpty(), "Ska ha valideringsfel för >100% omfattning");
+        assertEquals(1, fel.size());
+        assertTrue(fel.get(0).contains("ogiltig omfattning"));
+    }
+
+    @Test
+    @DisplayName("Validering: Negativ omfattning")
+    void valideringNegativOmfattning() {
+        var underlag = List.of(
+                new RegelService.ErsattningUnderlag("1", "2025-08-01", -10, true)
+        );
+
+        var fel = regelService.valideraUnderlag(underlag);
+
+        assertFalse(fel.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Validering: Flera fel på samma underlag")
+    void valideringFleraFelSammaUnderlag() {
+        var underlag = List.of(
+                new RegelService.ErsattningUnderlag("1", "2025-08-01", 0, false)
+        );
+
+        var fel = regelService.valideraUnderlag(underlag);
+
+        assertEquals(2, fel.size());
+    }
+
+    @Test
+    @DisplayName("Validering: Tom lista ger inga fel")
+    void valideringTomLista() {
+        List<RegelService.ErsattningUnderlag> underlag = List.of();
+
+        var fel = regelService.valideraUnderlag(underlag);
+
+        assertTrue(fel.isEmpty());
     }
 
     // ============================================================
@@ -182,26 +264,30 @@ class RegelServiceTest {
     @Test
     @DisplayName("Beslut: Positiv ersättning = BIFALL")
     void beslutBifallVidPositivErsattning() {
-        // Given
         var resultat = new RegelService.BerakningsResultat(8000.0, 2, 4000.0);
 
-        // When
         var beslut = regelService.fattaBeslut(resultat);
 
-        // Then
         assertEquals(Utfall.JA, beslut);
     }
 
     @Test
     @DisplayName("Beslut: Noll ersättning = AVSLAG")
     void beslutAvslagVidNollErsattning() {
-        // Given
         var resultat = new RegelService.BerakningsResultat(0.0, 0, 0.0);
 
-        // When
         var beslut = regelService.fattaBeslut(resultat);
 
-        // Then
+        assertEquals(Utfall.NEJ, beslut);
+    }
+
+    @Test
+    @DisplayName("Beslut: Negativ ersättning = AVSLAG")
+    void beslutAvslagVidNegativErsattning() {
+        var resultat = new RegelService.BerakningsResultat(-100.0, 1, -100.0);
+
+        var beslut = regelService.fattaBeslut(resultat);
+
         assertEquals(Utfall.NEJ, beslut);
     }
 }

@@ -20,8 +20,8 @@
         {"typ": "AVDRAG", "belopp": -2000.0, "beskrivning": "Franvaro VAB"}
       ],
       "organisation": {
-        "nummer": "123456-7890",
-        "namn": "Region Dalarna"
+        "namn": "Region Dalarna",
+        "nummer": "123456-7890"
       }
     }
   }

@@ -64,7 +64,7 @@ public class RegelService implements RegelRequestHandlerInterface {
    @Override
    public void handleRegelRequest(RegelDataRequest request) {
       try {
-       var cloudevent = ImmutableCloudEventData.builder()
+         var cloudevent = ImmutableCloudEventData.builder()
                  .id(request.id())
                  .kogitoparentprociid(request.kogitoparentprociid())
                  .kogitoprocid(request.kogitoprocid())
@@ -83,7 +83,7 @@ public class RegelService implements RegelRequestHandlerInterface {
                  request.kundbehovsflodeId(), cloudevent, utfall);
          regelKafkaProducer.sendRegelResponse(regelResponse);
 
-      } catch (JsonProcessingException e) {
+      } catch (Exception e) {
          LOGGER.error("[{}] Fel vid bearbetning: {}", REGEL_NAMN, request.kundbehovsflodeId(), e);
       }
    }
@@ -101,7 +101,7 @@ public class RegelService implements RegelRequestHandlerInterface {
          valideringsfel.add("Ersattningsunderlag saknas");
       }
       if (arbetsgivardata.specificeradLon() <= 0) {
-         valideringsfel.add("Specificerad lon saknas eller är 0");
+         valideringsfel.add("Specificerad lon saknas eller ar 0");
       }
       if (!valideringsfel.isEmpty()) {
          LOGGER.warn("[{}] AVSLAG - saknade underlag: {}", REGEL_NAMN, valideringsfel);
@@ -120,55 +120,55 @@ public class RegelService implements RegelRequestHandlerInterface {
    }
 
    private ArbetsgivareData hamtaArbetsgivardata(RegelDataRequest request) {
-      String arbetsgivare = "Okand arbetsgivare";
-      String organisationsnummer = "000000-0000";
-      double specificeradLon = 0.0;
+      // TODO: Personnummer ska hamtas fran request.data eller via separat tjanst
+      // baserat pa kundbehovsflodeId. Hardkodat for POC.
+      String personnummer = "19850101-1234";
+
+      var lonRequest = ImmutableSpecificeradLonRequest.builder()
+              .personnummer(personnummer)
+              .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
+              .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
+              .build();
+
+      LOGGER.info("[{}] Anropar arbetsgivare-adapter for specificerad lon...", REGEL_NAMN);
 
       try {
-         // Hamta specificerad lon via adaptern
-         var lonRequest = ImmutableSpecificeradLonRequest.builder()
-                 .personnummer("19850101-1234")  // TODO: Hamta fran request
-                 .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
-                 .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
-                 .build();
-
-         LOGGER.info("[{}] Anropar arbetsgivare-adapter for specificerad lon...", REGEL_NAMN);
          SpecificeradLonResponse lonResponse = arbetsgivareAdapter.getSpecificeradLon(lonRequest);
 
-         if (lonResponse != null) {
-            arbetsgivare = lonResponse.organisationsnamn();
-            organisationsnummer = lonResponse.organisationsnummer();
-            specificeradLon = lonResponse.lonesumma();
-
-            LOGGER.info("[{}] Arbetsgivare: {} ({})", REGEL_NAMN, arbetsgivare, organisationsnummer);
-            LOGGER.info("[{}] Lonesumma: {} kr",
-                    REGEL_NAMN, specificeradLon);
-
-            // Logga lonerader for sparbarhet
-            lonResponse.lonerader().forEach(rad ->
-                    LOGGER.info("[{}]   - {}: {} kr ({})",
-                            REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
+         if (lonResponse == null) {
+            LOGGER.error("[{}] Fick null-svar fran arbetsgivare-adapter for personnummer: {}",
+                    REGEL_NAMN, personnummer);
+            throw new IllegalStateException("Arbetsgivare-adapter returnerade null");
          }
 
-      } catch (Exception e) {
-         LOGGER.warn("[{}] Kunde inte hamta fran arbetsgivare-API: {}", REGEL_NAMN, e.getMessage());
-         LOGGER.info("[{}] Anvander simulerad data istallet", REGEL_NAMN);
-         arbetsgivare = "Simulerad arbetsgivare";
-         specificeradLon = 40000.0;
-      }
+         String arbetsgivare = lonResponse.organisationsnamn();
+         String organisationsnummer = lonResponse.organisationsnummer();
+         double specificeradLon = lonResponse.lonesumma();
 
-      return new ArbetsgivareData(arbetsgivare, organisationsnummer, specificeradLon);
+         LOGGER.info("[{}] Arbetsgivare: {} ({})", REGEL_NAMN, arbetsgivare, organisationsnummer);
+         LOGGER.info("[{}] Lonesumma: {} kr", REGEL_NAMN, specificeradLon);
+
+         lonResponse.lonerader().forEach(rad ->
+                 LOGGER.info("[{}]   - {}: {} kr ({})",
+                         REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
+
+         return new ArbetsgivareData(arbetsgivare, organisationsnummer, specificeradLon);
+
+      } catch (Exception e) {
+         LOGGER.error("[{}] Kunde inte hamta fran arbetsgivare-API: {}", REGEL_NAMN, e.getMessage(), e);
+         throw new RuntimeException("Fel vid hamtning av arbetsgivardata", e);
+      }
    }
 
    private List<ErsattningUnderlag> hamtaErsattningUnderlag(RegelDataRequest request) {
-      // Simulerad data - 2 dagar med vard av husdjur
+      // TODO: Hamta fran request.data eller separat tjanst. Hardkodat for POC.
       return List.of(
               new ErsattningUnderlag("1", "2025-08-02", 100, true),
               new ErsattningUnderlag("2", "2025-08-21", 100, true)
       );
    }
 
-   private List<String> valideraUnderlag(List<ErsattningUnderlag> ersattningUnderlag) {
+   List<String> valideraUnderlag(List<ErsattningUnderlag> ersattningUnderlag) {
       List<String> avslagsskal = new ArrayList<>();
       for (ErsattningUnderlag underlag : ersattningUnderlag) {
          if (!underlag.beslutsutfallJa()) {
@@ -181,7 +181,7 @@ public class RegelService implements RegelRequestHandlerInterface {
       return avslagsskal;
    }
 
-   private BerakningsResultat beraknaErsattning(
+   BerakningsResultat beraknaErsattning(
            List<ErsattningUnderlag> ersattningUnderlag,
            ArbetsgivareData arbetsgivardata) {
 
@@ -208,9 +208,9 @@ public class RegelService implements RegelRequestHandlerInterface {
       return new BerakningsResultat(totalErsattning, antalDagar, dagsersattning);
    }
 
-   private Utfall fattaBeslut(BerakningsResultat resultat) {
+   Utfall fattaBeslut(BerakningsResultat resultat) {
       if (resultat.totalErsattning() <= 0) {
-         LOGGER.info("[{}] BESLUT: AVSLAG (ersättning blev 0 kr)", REGEL_NAMN);
+         LOGGER.info("[{}] BESLUT: AVSLAG (ersattning blev 0 kr)", REGEL_NAMN);
          loggaJuridiskGrund();
          return Utfall.NEJ;
       }
