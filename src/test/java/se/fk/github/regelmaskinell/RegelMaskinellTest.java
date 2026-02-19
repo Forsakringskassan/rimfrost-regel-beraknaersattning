@@ -140,10 +140,10 @@ public class RegelMaskinellTest
    @ParameterizedTest
    @CsvSource(
    {
-         "5367f6b8-cc4a-11f0-8de9-199901011234,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901013333,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901012222,  Ja",
-         "5367f6b8-cc4a-11f0-8de9-199901014444,  Ja"
+         "5367f6b8-cc4a-11f0-8de9-5367f6b11234,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b13333,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b12222,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b14444,  Ja"
    })
    void testRegelMaskinellEndToEnd(String kundbehovsflodeId, String expectedUtfall) throws Exception
    {
@@ -211,7 +211,7 @@ public class RegelMaskinellTest
    void testUtfallIsValid()
    {
       // Anvand giltigt UUID-format (samma som i CsvSource)
-      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-199901019999";
+      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-3456789abcde";
 
       //
       // Send regel request
