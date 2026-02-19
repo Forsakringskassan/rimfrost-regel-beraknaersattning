@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
-public class RegelService implements RegelRequestHandlerInterface {
+public class RegelService implements RegelRequestHandlerInterface
+{
 
    private static final Logger LOGGER = LoggerFactory.getLogger(RegelService.class);
 
@@ -47,69 +48,79 @@ public class RegelService implements RegelRequestHandlerInterface {
    private RegelConfig regelConfig;
 
    @PostConstruct
-   void init() {
+   void init()
+   {
       this.regelConfig = regelConfigProvider.getConfig();
       LOGGER.info("=== REGEL LADDAD: {} v{} ===",
-              regelConfig.getRegel().getNamn(),
-              regelConfig.getRegel().getVersion());
+            regelConfig.getRegel().getNamn(),
+            regelConfig.getRegel().getVersion());
       LOGGER.info("Lagrum: {} {} kap. {} paragraf",
-              regelConfig.getLagrum().getForfattning(),
-              regelConfig.getLagrum().getKapitel(),
-              regelConfig.getLagrum().getParagraf());
+            regelConfig.getLagrum().getForfattning(),
+            regelConfig.getLagrum().getKapitel(),
+            regelConfig.getLagrum().getParagraf());
    }
 
    @ConfigProperty(name = "kafka.source")
    String kafkaSource;
 
    @Override
-   public void handleRegelRequest(RegelDataRequest request) {
-      try {
+   public void handleRegelRequest(RegelDataRequest request)
+   {
+      try
+      {
          var cloudevent = ImmutableCloudEventData.builder()
-                 .id(request.id())
-                 .kogitoparentprociid(request.kogitoparentprociid())
-                 .kogitoprocid(request.kogitoprocid())
-                 .kogitoprocinstanceid(request.kogitoprocinstanceid())
-                 .kogitoprocist(request.kogitoprocist())
-                 .kogitoprocversion(request.kogitoprocversion())
-                 .kogitorootprocid(request.kogitorootprocid())
-                 .kogitorootprociid(request.kogitorootprociid())
-                 .type(request.type())
-                 .source(kafkaSource)
-                 .build();
+               .id(request.id())
+               .kogitoparentprociid(request.kogitoparentprociid())
+               .kogitoprocid(request.kogitoprocid())
+               .kogitoprocinstanceid(request.kogitoprocinstanceid())
+               .kogitoprocist(request.kogitoprocist())
+               .kogitoprocversion(request.kogitoprocversion())
+               .kogitorootprocid(request.kogitorootprocid())
+               .kogitorootprociid(request.kogitorootprociid())
+               .type(request.type())
+               .source(kafkaSource)
+               .build();
 
          var utfall = processRegelRequest(request);
 
          var regelResponse = regelMapper.toRegelResponse(
-                 request.kundbehovsflodeId(), cloudevent, utfall);
+               request.kundbehovsflodeId(), cloudevent, utfall);
          regelKafkaProducer.sendRegelResponse(regelResponse);
 
-      } catch (Exception e) {
+      }
+      catch (Exception e)
+      {
          LOGGER.error("[{}] Fel vid bearbetning: {}", REGEL_NAMN, request.kundbehovsflodeId(), e);
       }
    }
 
-   private Utfall processRegelRequest(RegelDataRequest request) throws JsonProcessingException {
+   private Utfall processRegelRequest(RegelDataRequest request) throws JsonProcessingException
+   {
 
       ArbetsgivareData arbetsgivardata = hamtaArbetsgivardata(request);
       List<ErsattningUnderlag> ersattningUnderlag = hamtaErsattningUnderlag(request);
 
       LOGGER.info("[{}] Ersattningsunderlag: {}, Specificerad lon: {} kr",
-              REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
+            REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
 
       List<String> valideringsfel = new ArrayList<>();
-      if (ersattningUnderlag.isEmpty()) {
+      if (ersattningUnderlag.isEmpty())
+      {
          valideringsfel.add("Ersattningsunderlag saknas");
       }
-      if (arbetsgivardata.specificeradLon() <= 0) {
+      if (arbetsgivardata.specificeradLon() <= 0)
+      {
          valideringsfel.add("Specificerad lon saknas eller ar 0");
       }
-      if (!valideringsfel.isEmpty()) {
+      if (!valideringsfel.isEmpty())
+      {
          LOGGER.warn("[{}] AVSLAG - saknade underlag: {}", REGEL_NAMN, valideringsfel);
          return Utfall.NEJ;
       }
 
       List<String> avslagsskal = valideraUnderlag(ersattningUnderlag);
-      if (!avslagsskal.isEmpty()) {
+      if (!avslagsskal.isEmpty())
+      {
          LOGGER.warn("[{}] AVSLAG: {}", REGEL_NAMN, avslagsskal);
          return Utfall.NEJ;
       }
@@ -119,25 +130,28 @@ public class RegelService implements RegelRequestHandlerInterface {
       return fattaBeslut(resultat);
    }
 
-   private ArbetsgivareData hamtaArbetsgivardata(RegelDataRequest request) {
+   private ArbetsgivareData hamtaArbetsgivardata(RegelDataRequest request)
+   {
       // TODO: Personnummer ska hamtas fran request.data eller via separat tjanst
       // baserat pa kundbehovsflodeId. Hardkodat for POC.
       String personnummer = "19850101-1234";
 
       var lonRequest = ImmutableSpecificeradLonRequest.builder()
-              .personnummer(personnummer)
-              .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
-              .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
-              .build();
+            .personnummer(personnummer)
+            .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
+            .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
+            .build();
 
       LOGGER.info("[{}] Anropar arbetsgivare-adapter for specificerad lon...", REGEL_NAMN);
 
-      try {
+      try
+      {
          SpecificeradLonResponse lonResponse = arbetsgivareAdapter.getSpecificeradLon(lonRequest);
 
-         if (lonResponse == null) {
+         if (lonResponse == null)
+         {
             LOGGER.error("[{}] Fick null-svar fran arbetsgivare-adapter for personnummer: {}",
-                    REGEL_NAMN, personnummer);
+                  REGEL_NAMN, personnummer);
             throw new IllegalStateException("Arbetsgivare-adapter returnerade null");
          }
 
@@ -148,33 +162,38 @@ public class RegelService implements RegelRequestHandlerInterface {
          LOGGER.info("[{}] Arbetsgivare: {} ({})", REGEL_NAMN, arbetsgivare, organisationsnummer);
          LOGGER.info("[{}] Lonesumma: {} kr", REGEL_NAMN, specificeradLon);
 
-         lonResponse.lonerader().forEach(rad ->
-                 LOGGER.info("[{}]   - {}: {} kr ({})",
-                         REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
+         lonResponse.lonerader().forEach(rad -> LOGGER.info("[{}]   - {}: {} kr ({})",
+               REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
 
          return new ArbetsgivareData(arbetsgivare, organisationsnummer, specificeradLon);
 
-      } catch (Exception e) {
+      }
+      catch (Exception e)
+      {
          LOGGER.error("[{}] Kunde inte hamta fran arbetsgivare-API: {}", REGEL_NAMN, e.getMessage(), e);
          throw new RuntimeException("Fel vid hamtning av arbetsgivardata", e);
       }
    }
 
-   private List<ErsattningUnderlag> hamtaErsattningUnderlag(RegelDataRequest request) {
+   private List<ErsattningUnderlag> hamtaErsattningUnderlag(RegelDataRequest request)
+   {
       // TODO: Hamta fran request.data eller separat tjanst. Hardkodat for POC.
       return List.of(
-              new ErsattningUnderlag("1", "2025-08-02", 100, true),
-              new ErsattningUnderlag("2", "2025-08-21", 100, true)
-      );
+            new ErsattningUnderlag("1", "2025-08-02", 100, true),
+            new ErsattningUnderlag("2", "2025-08-21", 100, true));
    }
 
-   List<String> valideraUnderlag(List<ErsattningUnderlag> ersattningUnderlag) {
+   List<String> valideraUnderlag(List<ErsattningUnderlag> ersattningUnderlag)
+   {
       List<String> avslagsskal = new ArrayList<>();
-      for (ErsattningUnderlag underlag : ersattningUnderlag) {
-         if (!underlag.beslutsutfallJa()) {
+      for (ErsattningUnderlag underlag : ersattningUnderlag)
+      {
+         if (!underlag.beslutsutfallJa())
+         {
             avslagsskal.add("Underlag " + underlag.id() + " har inte beslutsutfall JA");
          }
-         if (underlag.omfattning() <= 0 || underlag.omfattning() > 100) {
+         if (underlag.omfattning() <= 0 || underlag.omfattning() > 100)
+         {
             avslagsskal.add("Underlag " + underlag.id() + " har ogiltig omfattning");
          }
       }
@@ -182,25 +201,27 @@ public class RegelService implements RegelRequestHandlerInterface {
    }
 
    BerakningsResultat beraknaErsattning(
-           List<ErsattningUnderlag> ersattningUnderlag,
-           ArbetsgivareData arbetsgivardata) {
+         List<ErsattningUnderlag> ersattningUnderlag,
+         ArbetsgivareData arbetsgivardata)
+   {
 
       double dagsersattning = arbetsgivardata.specificeradLon() * ERSATTNINGSGRAD;
 
       LOGGER.info("[{}] BERAKNING - Arbetsgivare: {}, Lon: {} kr, Dagsersattning: {} kr",
-              REGEL_NAMN, arbetsgivardata.arbetsgivare(),
-              arbetsgivardata.specificeradLon(), dagsersattning);
+            REGEL_NAMN, arbetsgivardata.arbetsgivare(),
+            arbetsgivardata.specificeradLon(), dagsersattning);
 
       double totalErsattning = 0.0;
       int antalDagar = 0;
 
-      for (ErsattningUnderlag underlag : ersattningUnderlag) {
+      for (ErsattningUnderlag underlag : ersattningUnderlag)
+      {
          double belopp = dagsersattning * (underlag.omfattning() / 100.0);
          totalErsattning += belopp;
          antalDagar++;
          LOGGER.info("[{}] Dag {} ({}): {} kr x {}% = {} kr",
-                 REGEL_NAMN, antalDagar, underlag.datum(),
-                 dagsersattning, underlag.omfattning(), belopp);
+               REGEL_NAMN, antalDagar, underlag.datum(),
+               dagsersattning, underlag.omfattning(), belopp);
       }
 
       LOGGER.info("[{}] TOTAL ERSATTNING: {} kr for {} dagar", REGEL_NAMN, totalErsattning, antalDagar);
@@ -208,8 +229,10 @@ public class RegelService implements RegelRequestHandlerInterface {
       return new BerakningsResultat(totalErsattning, antalDagar, dagsersattning);
    }
 
-   Utfall fattaBeslut(BerakningsResultat resultat) {
-      if (resultat.totalErsattning() <= 0) {
+   Utfall fattaBeslut(BerakningsResultat resultat)
+   {
+      if (resultat.totalErsattning() <= 0)
+      {
          LOGGER.info("[{}] BESLUT: AVSLAG (ersattning blev 0 kr)", REGEL_NAMN);
          loggaJuridiskGrund();
          return Utfall.NEJ;
@@ -219,36 +242,40 @@ public class RegelService implements RegelRequestHandlerInterface {
       return Utfall.JA;
    }
 
-   private void loggaJuridiskGrund() {
+   private void loggaJuridiskGrund()
+   {
       LOGGER.info("[{}] Juridisk grund: {} {} kap. {} paragraf {} st. {} p.",
-              REGEL_NAMN,
-              regelConfig.getLagrum().getForfattning(),
-              regelConfig.getLagrum().getKapitel(),
-              regelConfig.getLagrum().getParagraf(),
-              regelConfig.getLagrum().getStycke(),
-              regelConfig.getLagrum().getPunkt());
+            REGEL_NAMN,
+            regelConfig.getLagrum().getForfattning(),
+            regelConfig.getLagrum().getKapitel(),
+            regelConfig.getLagrum().getParagraf(),
+            regelConfig.getLagrum().getStycke(),
+            regelConfig.getLagrum().getPunkt());
       LOGGER.info("[{}] Regel-ID: {} v{}",
-              REGEL_NAMN,
-              regelConfig.getRegel().getId(),
-              regelConfig.getRegel().getVersion());
+            REGEL_NAMN,
+            regelConfig.getRegel().getId(),
+            regelConfig.getRegel().getVersion());
    }
 
    record ArbetsgivareData(
-           String arbetsgivare,
-           String organisationsnummer,
-           double specificeradLon
-   ) {}
+         String arbetsgivare,
+         String organisationsnummer,
+         double specificeradLon)
+   {
+   }
 
    record ErsattningUnderlag(
-           String id,
-           String datum,
-           int omfattning,
-           boolean beslutsutfallJa
-   ) {}
+         String id,
+         String datum,
+         int omfattning,
+         boolean beslutsutfallJa)
+   {
+   }
 
    record BerakningsResultat(
-           double totalErsattning,
-           int antalDagar,
-           double dagsersattning
-   ) {}
+         double totalErsattning,
+         int antalDagar,
+         double dagsersattning)
+   {
+   }
 }

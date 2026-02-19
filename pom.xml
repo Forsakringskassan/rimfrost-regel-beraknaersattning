@@ -35,12 +35,12 @@
     <dependency>
       <groupId>se.fk.rimfrost.api.arbetsgivare</groupId>
       <artifactId>rimfrost-arbetsgivare-api-jaxrs-spec</artifactId>
-      <version>1.1.1</version>
+      <version>1.1.5</version>
     </dependency>
     <dependency>
       <groupId>se.fk.rimfrost.framework.arbetsgivare</groupId>
       <artifactId>rimfrost-framework-arbetsgivare-adapter</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>0.1.0</version>
     </dependency>
     <dependency>
       <groupId>io.smallrye.reactive</groupId>

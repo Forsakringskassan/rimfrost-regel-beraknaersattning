@@ -12,6 +12,8 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import se.fk.rimfrost.framework.regel.*;
@@ -23,22 +25,25 @@ import java.util.concurrent.TimeUnit;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @QuarkusTestResource.List(
-        {
-                @QuarkusTestResource(WireMockTestResource.class)
-        })
+{
+      @QuarkusTestResource(WireMockTestResource.class)
+})
 public class RegelMaskinellTest
 {
-
    private static final String regelRequestsChannel = "regel-requests";
    private static final String regelResponsesChannel = "regel-responses";
-   private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
-           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+   private static final ObjectMapper mapper = new ObjectMapper()
+         .registerModule(new JavaTimeModule())
+         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
    private static WireMockServer wiremockServer;
 
    @Inject
@@ -50,6 +55,13 @@ public class RegelMaskinellTest
    {
       setupRegelMaskinellTest();
       setupWiremock();
+   }
+
+   @BeforeEach
+   void clearChannels()
+   {
+      wiremockServer.resetRequests();
+      inMemoryConnector.sink(regelResponsesChannel).clear();
    }
 
    static void setupRegelMaskinellTest()
@@ -74,41 +86,13 @@ public class RegelMaskinellTest
       wiremockServer = WireMockTestResource.getWireMockServer();
    }
 
-   public static List<LoggedRequest> waitForWireMockRequest(
-           WireMockServer server,
-           String urlRegex,
-           int minRequests)
-   {
-      List<LoggedRequest> requests = Collections.emptyList();
-      int retries = 20;
-      long sleepMs = 250;
-      for (int i = 0; i < retries; i++)
-      {
-         requests = server.findAll(anyRequestedFor(urlMatching(urlRegex)));
-         if (requests.size() >= minRequests)
-         {
-            return requests;
-         }
-         try
-         {
-            Thread.sleep(sleepMs);
-         }
-         catch (InterruptedException e)
-         {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for WireMock request", e);
-         }
-      }
-      return requests;
-   }
-
    private List<? extends Message<?>> waitForMessages(String channel)
    {
       await().atMost(5, TimeUnit.SECONDS).until(() -> !inMemoryConnector.sink(channel).received().isEmpty());
       return inMemoryConnector.sink(channel).received();
    }
 
-   private void sendRegelMaskinellRequest(String kundbehovsflodeId) throws Exception
+   private RegelRequestMessagePayload createRegelRequest(String kundbehovsflodeId)
    {
       RegelRequestMessagePayload payload = new RegelRequestMessagePayload();
       RegelRequestMessagePayloadData data = new RegelRequestMessagePayloadData();
@@ -127,41 +111,143 @@ public class RegelMaskinellTest
       payload.setKogitoproctype(KogitoProcType.BPMN);
       payload.setKogitoprocrefid("56789");
       payload.setData(data);
-      inMemoryConnector.source(regelRequestsChannel).send(payload);
+      return payload;
    }
+
+   private void sendRegelRequest(String kundbehovsflodeId)
+   {
+      inMemoryConnector.source(regelRequestsChannel).send(createRegelRequest(kundbehovsflodeId));
+   }
+
+   // ========================================================================
+   // Health Check
+   // ========================================================================
+
+   @Test
+   public void testHealthEndpoint()
+   {
+      when()
+            .get("/q/health/live")
+            .then()
+            .statusCode(200)
+            .body("status", is("UP"));
+   }
+
+   // ========================================================================
+   // End-to-end Smoke Test
+   // ========================================================================
 
    @ParameterizedTest
    @CsvSource(
-           {
-                   "5367f6b8-cc4a-11f0-8de9-199901011234,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-199901013333,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-199901012222,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-199901014444,  Ja"
-           })
-   void TestRegelMaskinell(String kundbehovsflodeId,
-                           String expectedUtfall) throws Exception
    {
+         "5367f6b8-cc4a-11f0-8de9-199901011234,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-199901013333,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-199901012222,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-199901014444,  Ja"
+   })
+   void testRegelMaskinellEndToEnd(String kundbehovsflodeId, String expectedUtfall) throws Exception
+   {
+      System.out.printf("Starting testRegelMaskinellEndToEnd: %s%n", kundbehovsflodeId);
 
-      // Clear out any previous requests
-      wiremockServer.resetRequests();
+      //
+      // Send regel request via Kafka
+      //
+      RegelRequestMessagePayload request = createRegelRequest(kundbehovsflodeId);
+      inMemoryConnector.source(regelRequestsChannel).send(request);
 
-      // Clear out any previous messages
-      inMemoryConnector.sink(regelResponsesChannel).clear();
-
-      System.out.printf("Starting TestRegelMaskinellSmoke. %S%n", kundbehovsflodeId);
-      // Send regel maskinell request to start workflow
-      sendRegelMaskinellRequest(kundbehovsflodeId);
-
-      // Verify regel maskinell response
+      //
+      // Verify Kafka response message produced
+      //
       var messages = waitForMessages(regelResponsesChannel);
-      assertEquals(1, messages.size());
+      assertEquals(1, messages.size(), "Exakt ett response-meddelande ska produceras");
 
       var message = messages.getFirst().getPayload();
       assertInstanceOf(RegelResponseMessagePayload.class, message);
 
-      var regelMaskinellResponse = (RegelResponseMessagePayload) message;
-      assertEquals(kundbehovsflodeId, regelMaskinellResponse.getData().getKundbehovsflodeId());
-      assertEquals(expectedUtfall, regelMaskinellResponse.getData().getUtfall().getValue());
+      var response = (RegelResponseMessagePayload) message;
 
+      //
+      // Verify response data
+      //
+      assertNotNull(response.getData(), "Response data ska finnas");
+      assertEquals(kundbehovsflodeId, response.getData().getKundbehovsflodeId(),
+            "kundbehovsflodeId ska matcha request");
+      assertEquals(expectedUtfall, response.getData().getUtfall().getValue(),
+            "Utfall ska vara " + expectedUtfall);
+
+      //
+      // Verify CloudEvent fields
+      //
+      assertNotNull(response.getSpecversion(), "specversion ska finnas");
+      assertEquals(SpecVersion.NUMBER_1_DOT_0, response.getSpecversion(), "specversion ska vara 1.0");
+      assertNotNull(response.getId(), "id ska finnas");
+      assertNotNull(response.getSource(), "source ska finnas");
+      assertNotNull(response.getType(), "type ska finnas");
+
+      //
+      // Verify Kogito fields are propagated
+      //
+      assertEquals(request.getKogitoprocid(), response.getKogitoprocid(),
+            "kogitoprocid ska propageras fran request");
+      assertEquals(request.getKogitorootprocid(), response.getKogitorootprocid(),
+            "kogitorootprocid ska propageras fran request");
+      assertEquals(request.getKogitoprocinstanceid(), response.getKogitoprocinstanceid(),
+            "kogitoprocinstanceid ska propageras fran request");
+      assertEquals(request.getKogitoparentprociid(), response.getKogitoparentprociid(),
+            "kogitoparentprociid ska propageras fran request");
+      assertEquals(request.getKogitorootprociid(), response.getKogitorootprociid(),
+            "kogitorootprociid ska propageras fran request");
+      assertEquals(request.getKogitoprocversion(), response.getKogitoprocversion(),
+            "kogitoprocversion ska propageras fran request");
+      assertEquals(request.getKogitoproctype(), response.getKogitoproctype(),
+            "kogitoproctype ska propageras fran request");
+   }
+
+   // ========================================================================
+   // Utfall Tests
+   // ========================================================================
+
+   @Test
+   void testUtfallIsValid()
+   {
+      // Anvand giltigt UUID-format (samma som i CsvSource)
+      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-199901019999";
+
+      //
+      // Send regel request
+      //
+      sendRegelRequest(kundbehovsflodeId);
+
+      //
+      // Verify response with valid utfall
+      //
+      var messages = waitForMessages(regelResponsesChannel);
+      var response = (RegelResponseMessagePayload) messages.getFirst().getPayload();
+
+      assertNotNull(response.getData().getUtfall(), "Utfall ska finnas");
+      String utfallValue = response.getData().getUtfall().getValue();
+      assertTrue(utfallValue.equals("Ja") || utfallValue.equals("Nej"),
+            "Utfall ska vara 'Ja' eller 'Nej', var: " + utfallValue);
+   }
+
+   @Test
+   void testKundbehovsflodeIdReturnsInResponse()
+   {
+      // Anvand giltigt UUID-format
+      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-199901018888";
+
+      //
+      // Send regel request
+      //
+      sendRegelRequest(kundbehovsflodeId);
+
+      //
+      // Verify kundbehovsflodeId in response
+      //
+      var messages = waitForMessages(regelResponsesChannel);
+      var response = (RegelResponseMessagePayload) messages.getFirst().getPayload();
+
+      assertEquals(kundbehovsflodeId, response.getData().getKundbehovsflodeId(),
+            "kundbehovsflodeId ska matcha request");
    }
 }
