@@ -234,7 +234,7 @@ public class RegelMaskinellTest
    void testKundbehovsflodeIdReturnsInResponse()
    {
       // Anvand giltigt UUID-format
-      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-199901018888";
+      String kundbehovsflodeId = "5367f6b8-cc4a-11f0-8de9-5367f6b88888";
 
       //
       // Send regel request
