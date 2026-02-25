@@ -10,7 +10,7 @@
 
   <groupId>com.example</groupId>
   <artifactId>rimfrost-template-regel-maskinell</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <properties>
     <violations.maxViolations>0</violations.maxViolations>
