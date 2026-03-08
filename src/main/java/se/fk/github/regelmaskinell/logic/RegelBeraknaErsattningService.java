@@ -1,20 +1,20 @@
 package se.fk.github.regelmaskinell.logic;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import se.fk.rimfrost.framework.regel.integration.config.RegelConfigProvider;
-import se.fk.rimfrost.framework.regel.integration.kafka.RegelKafkaProducer;
-import se.fk.rimfrost.framework.regel.logic.config.RegelConfig;
-import se.fk.rimfrost.framework.regel.logic.dto.RegelDataRequest;
-import se.fk.rimfrost.framework.regel.logic.entity.ImmutableCloudEventData;
-import se.fk.rimfrost.framework.regel.presentation.kafka.RegelRequestHandlerInterface;
 import se.fk.rimfrost.framework.regel.Utfall;
+import se.fk.rimfrost.framework.regel.integration.config.RegelConfigProvider;
+import se.fk.rimfrost.framework.regel.logic.config.RegelConfig;
+import se.fk.rimfrost.framework.regel.logic.entity.ImmutableErsattningData;
+import se.fk.rimfrost.framework.regel.logic.entity.ImmutableUnderlag;
+import se.fk.rimfrost.framework.regel.maskinell.logic.RegelMaskinellServiceInterface;
+import se.fk.rimfrost.framework.regel.maskinell.logic.dto.ImmutableRegelMaskinellResult;
+import se.fk.rimfrost.framework.regel.maskinell.logic.dto.RegelMaskinellRequest;
+import se.fk.rimfrost.framework.regel.maskinell.logic.dto.RegelMaskinellResult;
+import se.fk.rimfrost.framework.regel.logic.dto.Beslutsutfall;
 
 import se.fk.rimfrost.framework.arbetsgivare.adapter.ArbetsgivareAdapter;
 import se.fk.rimfrost.framework.arbetsgivare.adapter.dto.SpecificeradLonResponse;
@@ -25,19 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ApplicationScoped
-public class RegelService implements RegelRequestHandlerInterface
+public class RegelBeraknaErsattningService implements RegelMaskinellServiceInterface
 {
 
-   private static final Logger LOGGER = LoggerFactory.getLogger(RegelService.class);
+   private static final Logger LOGGER = LoggerFactory.getLogger(RegelBeraknaErsattningService.class);
 
-   private static final String REGEL_NAMN = "Vard av husdjur";
+   private static final String REGEL_NAMN = "Vard av boskap";
    private static final double ERSATTNINGSGRAD = 0.10;
-
-   @Inject
-   RegelKafkaProducer regelKafkaProducer;
-
-   @Inject
-   se.fk.rimfrost.framework.regel.logic.RegelMapper regelMapper;
 
    @Inject
    RegelConfigProvider regelConfigProvider;
@@ -52,56 +46,39 @@ public class RegelService implements RegelRequestHandlerInterface
    {
       this.regelConfig = regelConfigProvider.getConfig();
       LOGGER.info("=== REGEL LADDAD: {} v{} ===",
-            regelConfig.getRegel().getNamn(),
-            regelConfig.getRegel().getVersion());
+              regelConfig.getRegel().getNamn(),
+              regelConfig.getRegel().getVersion());
       LOGGER.info("Lagrum: {} {} kap. {} paragraf",
-            regelConfig.getLagrum().getForfattning(),
-            regelConfig.getLagrum().getKapitel(),
-            regelConfig.getLagrum().getParagraf());
+              regelConfig.getLagrum().getForfattning(),
+              regelConfig.getLagrum().getKapitel(),
+              regelConfig.getLagrum().getParagraf());
    }
 
-   @ConfigProperty(name = "kafka.source")
-   String kafkaSource;
-
    @Override
-   public void handleRegelRequest(RegelDataRequest request)
+   public RegelMaskinellResult processRegel(RegelMaskinellRequest request)
    {
       try
       {
-         var cloudevent = ImmutableCloudEventData.builder()
-               .id(request.id())
-               .kogitoparentprociid(request.kogitoparentprociid())
-               .kogitoprocid(request.kogitoprocid())
-               .kogitoprocinstanceid(request.kogitoprocinstanceid())
-               .kogitoprocist(request.kogitoprocist())
-               .kogitoprocversion(request.kogitoprocversion())
-               .kogitorootprocid(request.kogitorootprocid())
-               .kogitorootprociid(request.kogitorootprociid())
-               .type(request.type())
-               .source(kafkaSource)
-               .build();
-
-         var utfall = processRegelRequest(request);
-
-         var regelResponse = regelMapper.toRegelResponse(
-               request.kundbehovsflodeId(), cloudevent, utfall);
-         regelKafkaProducer.sendRegelResponse(regelResponse);
-
+         return processRegelRequest(request);
       }
       catch (Exception e)
       {
-         LOGGER.error("[{}] Fel vid bearbetning: {}", REGEL_NAMN, request.kundbehovsflodeId(), e);
+         LOGGER.error("[{}] Fel vid bearbetning: {}", REGEL_NAMN, request.handlaggningId(), e);
+         return ImmutableRegelMaskinellResult.builder()
+                 .utfall(Utfall.NEJ)
+                 .ersattningar(List.of())
+                 .underlag(List.of())
+                 .build();
       }
    }
 
-   private Utfall processRegelRequest(RegelDataRequest request) throws JsonProcessingException
+   private RegelMaskinellResult processRegelRequest(RegelMaskinellRequest request)
    {
-
       ArbetsgivareData arbetsgivardata = hamtaArbetsgivardata(request);
-      List<ErsattningUnderlag> ersattningUnderlag = hamtaErsattningUnderlag(request);
+      List<ErsattningUnderlag> ersattningUnderlag = mapErsattningar(request);
 
       LOGGER.info("[{}] Ersattningsunderlag: {}, Specificerad lon: {} kr",
-            REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
+              REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
 
       List<String> valideringsfel = new ArrayList<>();
       if (ersattningUnderlag.isEmpty())
@@ -115,32 +92,65 @@ public class RegelService implements RegelRequestHandlerInterface
       if (!valideringsfel.isEmpty())
       {
          LOGGER.warn("[{}] AVSLAG - saknade underlag: {}", REGEL_NAMN, valideringsfel);
-         return Utfall.NEJ;
+         return byggResultat(Utfall.NEJ, request);
       }
 
       List<String> avslagsskal = valideraUnderlag(ersattningUnderlag);
       if (!avslagsskal.isEmpty())
       {
          LOGGER.warn("[{}] AVSLAG: {}", REGEL_NAMN, avslagsskal);
-         return Utfall.NEJ;
+         return byggResultat(Utfall.NEJ, request);
       }
 
       BerakningsResultat resultat = beraknaErsattning(ersattningUnderlag, arbetsgivardata);
+      Utfall utfall = fattaBeslut(resultat);
 
-      return fattaBeslut(resultat);
+      return byggResultat(utfall, request);
    }
 
-   private ArbetsgivareData hamtaArbetsgivardata(RegelDataRequest request)
+   private RegelMaskinellResult byggResultat(Utfall utfall, RegelMaskinellRequest request)
    {
-      // TODO: Personnummer ska hamtas fran request.data eller via separat tjanst
-      // baserat pa kundbehovsflodeId. Hardkodat for POC.
-      String personnummer = "19850101-1234";
+      Beslutsutfall beslutsutfall = utfall == Utfall.JA ? Beslutsutfall.JA : Beslutsutfall.NEJ;
+
+      List<ImmutableErsattningData> ersattningar = request.ersattning().stream()
+              .map(e -> ImmutableErsattningData.builder()
+                      .id(e.ersattningsId())
+                      .beslutsutfall(beslutsutfall)
+                      .build())
+              .toList();
+
+      return ImmutableRegelMaskinellResult.builder()
+              .utfall(utfall)
+              .ersattningar(ersattningar)
+              .underlag(List.of(
+                      ImmutableUnderlag.builder()
+                              .typ("beraknaersattning")
+                              .version("1.0")
+                              .data("{\"regelNamn\":\"" + REGEL_NAMN + "\"}")
+                              .build()))
+              .build();
+   }
+
+   private List<ErsattningUnderlag> mapErsattningar(RegelMaskinellRequest request)
+   {
+      return request.ersattning().stream()
+              .map(e -> new ErsattningUnderlag(
+                      e.ersattningsId().toString(),
+                      e.franOchMed().toString(),
+                      e.omfattningsProcent(),
+                      "JA".equalsIgnoreCase(e.beslutsutfall())))
+              .toList();
+   }
+
+   private ArbetsgivareData hamtaArbetsgivardata(RegelMaskinellRequest request)
+   {
+      String personnummer = request.personnummer();
 
       var lonRequest = ImmutableSpecificeradLonRequest.builder()
-            .personnummer(personnummer)
-            .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
-            .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
-            .build();
+              .personnummer(personnummer)
+              .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
+              .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
+              .build();
 
       LOGGER.info("[{}] Anropar arbetsgivare-adapter for specificerad lon...", REGEL_NAMN);
 
@@ -151,7 +161,7 @@ public class RegelService implements RegelRequestHandlerInterface
          if (lonResponse == null)
          {
             LOGGER.error("[{}] Fick null-svar fran arbetsgivare-adapter for personnummer: {}",
-                  REGEL_NAMN, personnummer);
+                    REGEL_NAMN, personnummer);
             throw new IllegalStateException("Arbetsgivare-adapter returnerade null");
          }
 
@@ -163,7 +173,7 @@ public class RegelService implements RegelRequestHandlerInterface
          LOGGER.info("[{}] Lonesumma: {} kr", REGEL_NAMN, specificeradLon);
 
          lonResponse.lonerader().forEach(rad -> LOGGER.info("[{}]   - {}: {} kr ({})",
-               REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
+                 REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
 
          return new ArbetsgivareData(arbetsgivare, organisationsnummer, specificeradLon);
 
@@ -173,14 +183,6 @@ public class RegelService implements RegelRequestHandlerInterface
          LOGGER.error("[{}] Kunde inte hamta fran arbetsgivare-API: {}", REGEL_NAMN, e.getMessage(), e);
          throw new RuntimeException("Fel vid hamtning av arbetsgivardata", e);
       }
-   }
-
-   private List<ErsattningUnderlag> hamtaErsattningUnderlag(RegelDataRequest request)
-   {
-      // TODO: Hamta fran request.data eller separat tjanst. Hardkodat for POC.
-      return List.of(
-            new ErsattningUnderlag("1", "2025-08-02", 100, true),
-            new ErsattningUnderlag("2", "2025-08-21", 100, true));
    }
 
    List<String> valideraUnderlag(List<ErsattningUnderlag> ersattningUnderlag)
@@ -201,15 +203,14 @@ public class RegelService implements RegelRequestHandlerInterface
    }
 
    BerakningsResultat beraknaErsattning(
-         List<ErsattningUnderlag> ersattningUnderlag,
-         ArbetsgivareData arbetsgivardata)
+           List<ErsattningUnderlag> ersattningUnderlag,
+           ArbetsgivareData arbetsgivardata)
    {
-
       double dagsersattning = arbetsgivardata.specificeradLon() * ERSATTNINGSGRAD;
 
       LOGGER.info("[{}] BERAKNING - Arbetsgivare: {}, Lon: {} kr, Dagsersattning: {} kr",
-            REGEL_NAMN, arbetsgivardata.arbetsgivare(),
-            arbetsgivardata.specificeradLon(), dagsersattning);
+              REGEL_NAMN, arbetsgivardata.arbetsgivare(),
+              arbetsgivardata.specificeradLon(), dagsersattning);
 
       double totalErsattning = 0.0;
       int antalDagar = 0;
@@ -220,8 +221,8 @@ public class RegelService implements RegelRequestHandlerInterface
          totalErsattning += belopp;
          antalDagar++;
          LOGGER.info("[{}] Dag {} ({}): {} kr x {}% = {} kr",
-               REGEL_NAMN, antalDagar, underlag.datum(),
-               dagsersattning, underlag.omfattning(), belopp);
+                 REGEL_NAMN, antalDagar, underlag.datum(),
+                 dagsersattning, underlag.omfattning(), belopp);
       }
 
       LOGGER.info("[{}] TOTAL ERSATTNING: {} kr for {} dagar", REGEL_NAMN, totalErsattning, antalDagar);
@@ -245,37 +246,37 @@ public class RegelService implements RegelRequestHandlerInterface
    private void loggaJuridiskGrund()
    {
       LOGGER.info("[{}] Juridisk grund: {} {} kap. {} paragraf {} st. {} p.",
-            REGEL_NAMN,
-            regelConfig.getLagrum().getForfattning(),
-            regelConfig.getLagrum().getKapitel(),
-            regelConfig.getLagrum().getParagraf(),
-            regelConfig.getLagrum().getStycke(),
-            regelConfig.getLagrum().getPunkt());
+              REGEL_NAMN,
+              regelConfig.getLagrum().getForfattning(),
+              regelConfig.getLagrum().getKapitel(),
+              regelConfig.getLagrum().getParagraf(),
+              regelConfig.getLagrum().getStycke(),
+              regelConfig.getLagrum().getPunkt());
       LOGGER.info("[{}] Regel-ID: {} v{}",
-            REGEL_NAMN,
-            regelConfig.getRegel().getId(),
-            regelConfig.getRegel().getVersion());
+              REGEL_NAMN,
+              regelConfig.getRegel().getId(),
+              regelConfig.getRegel().getVersion());
    }
 
    record ArbetsgivareData(
-         String arbetsgivare,
-         String organisationsnummer,
-         double specificeradLon)
+           String arbetsgivare,
+           String organisationsnummer,
+           double specificeradLon)
    {
    }
 
    record ErsattningUnderlag(
-         String id,
-         String datum,
-         int omfattning,
-         boolean beslutsutfallJa)
+           String id,
+           String datum,
+           int omfattning,
+           boolean beslutsutfallJa)
    {
    }
 
    record BerakningsResultat(
-         double totalErsattning,
-         int antalDagar,
-         double dagsersattning)
+           double totalErsattning,
+           int antalDagar,
+           double dagsersattning)
    {
    }
 }
