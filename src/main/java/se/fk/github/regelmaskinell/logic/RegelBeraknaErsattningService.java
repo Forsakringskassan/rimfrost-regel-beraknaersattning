@@ -46,12 +46,12 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
    {
       this.regelConfig = regelConfigProvider.getConfig();
       LOGGER.info("=== REGEL LADDAD: {} v{} ===",
-              regelConfig.getRegel().getNamn(),
-              regelConfig.getRegel().getVersion());
+            regelConfig.getRegel().getNamn(),
+            regelConfig.getRegel().getVersion());
       LOGGER.info("Lagrum: {} {} kap. {} paragraf",
-              regelConfig.getLagrum().getForfattning(),
-              regelConfig.getLagrum().getKapitel(),
-              regelConfig.getLagrum().getParagraf());
+            regelConfig.getLagrum().getForfattning(),
+            regelConfig.getLagrum().getKapitel(),
+            regelConfig.getLagrum().getParagraf());
    }
 
    @Override
@@ -65,10 +65,10 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
       {
          LOGGER.error("[{}] Fel vid bearbetning: {}", REGEL_NAMN, request.handlaggningId(), e);
          return ImmutableRegelMaskinellResult.builder()
-                 .utfall(Utfall.NEJ)
-                 .ersattningar(List.of())
-                 .underlag(List.of())
-                 .build();
+               .utfall(Utfall.NEJ)
+               .ersattningar(List.of())
+               .underlag(List.of())
+               .build();
       }
    }
 
@@ -78,7 +78,7 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
       List<ErsattningUnderlag> ersattningUnderlag = mapErsattningar(request);
 
       LOGGER.info("[{}] Ersattningsunderlag: {}, Specificerad lon: {} kr",
-              REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
+            REGEL_NAMN, ersattningUnderlag.size(), arbetsgivardata.specificeradLon());
 
       List<String> valideringsfel = new ArrayList<>();
       if (ersattningUnderlag.isEmpty())
@@ -113,33 +113,33 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
       Beslutsutfall beslutsutfall = utfall == Utfall.JA ? Beslutsutfall.JA : Beslutsutfall.NEJ;
 
       List<ImmutableErsattningData> ersattningar = request.ersattning().stream()
-              .map(e -> ImmutableErsattningData.builder()
-                      .id(e.ersattningsId())
-                      .beslutsutfall(beslutsutfall)
-                      .build())
-              .toList();
+            .map(e -> ImmutableErsattningData.builder()
+                  .id(e.ersattningsId())
+                  .beslutsutfall(beslutsutfall)
+                  .build())
+            .toList();
 
       return ImmutableRegelMaskinellResult.builder()
-              .utfall(utfall)
-              .ersattningar(ersattningar)
-              .underlag(List.of(
-                      ImmutableUnderlag.builder()
-                              .typ("beraknaersattning")
-                              .version("1.0")
-                              .data("{\"regelNamn\":\"" + REGEL_NAMN + "\"}")
-                              .build()))
-              .build();
+            .utfall(utfall)
+            .ersattningar(ersattningar)
+            .underlag(List.of(
+                  ImmutableUnderlag.builder()
+                        .typ("beraknaersattning")
+                        .version("1.0")
+                        .data("{\"regelNamn\":\"" + REGEL_NAMN + "\"}")
+                        .build()))
+            .build();
    }
 
    private List<ErsattningUnderlag> mapErsattningar(RegelMaskinellRequest request)
    {
       return request.ersattning().stream()
-              .map(e -> new ErsattningUnderlag(
-                      e.ersattningsId().toString(),
-                      e.franOchMed().toString(),
-                      e.omfattningsProcent(),
-                      "JA".equalsIgnoreCase(e.beslutsutfall())))
-              .toList();
+            .map(e -> new ErsattningUnderlag(
+                  e.ersattningsId().toString(),
+                  e.franOchMed().toString(),
+                  e.omfattningsProcent(),
+                  "JA".equalsIgnoreCase(e.beslutsutfall())))
+            .toList();
    }
 
    private ArbetsgivareData hamtaArbetsgivardata(RegelMaskinellRequest request)
@@ -147,10 +147,10 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
       String personnummer = request.personnummer();
 
       var lonRequest = ImmutableSpecificeradLonRequest.builder()
-              .personnummer(personnummer)
-              .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
-              .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
-              .build();
+            .personnummer(personnummer)
+            .fromDatum(LocalDate.now().minusMonths(1).withDayOfMonth(1))
+            .tomDatum(LocalDate.now().minusMonths(1).withDayOfMonth(28))
+            .build();
 
       LOGGER.info("[{}] Anropar arbetsgivare-adapter for specificerad lon...", REGEL_NAMN);
 
@@ -161,7 +161,7 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
          if (lonResponse == null)
          {
             LOGGER.error("[{}] Fick null-svar fran arbetsgivare-adapter for personnummer: {}",
-                    REGEL_NAMN, personnummer);
+                  REGEL_NAMN, personnummer);
             throw new IllegalStateException("Arbetsgivare-adapter returnerade null");
          }
 
@@ -173,7 +173,7 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
          LOGGER.info("[{}] Lonesumma: {} kr", REGEL_NAMN, specificeradLon);
 
          lonResponse.lonerader().forEach(rad -> LOGGER.info("[{}]   - {}: {} kr ({})",
-                 REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
+               REGEL_NAMN, rad.typ(), rad.belopp(), rad.beskrivning()));
 
          return new ArbetsgivareData(arbetsgivare, organisationsnummer, specificeradLon);
 
@@ -203,14 +203,14 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
    }
 
    BerakningsResultat beraknaErsattning(
-           List<ErsattningUnderlag> ersattningUnderlag,
-           ArbetsgivareData arbetsgivardata)
+         List<ErsattningUnderlag> ersattningUnderlag,
+         ArbetsgivareData arbetsgivardata)
    {
       double dagsersattning = arbetsgivardata.specificeradLon() * ERSATTNINGSGRAD;
 
       LOGGER.info("[{}] BERAKNING - Arbetsgivare: {}, Lon: {} kr, Dagsersattning: {} kr",
-              REGEL_NAMN, arbetsgivardata.arbetsgivare(),
-              arbetsgivardata.specificeradLon(), dagsersattning);
+            REGEL_NAMN, arbetsgivardata.arbetsgivare(),
+            arbetsgivardata.specificeradLon(), dagsersattning);
 
       double totalErsattning = 0.0;
       int antalDagar = 0;
@@ -221,8 +221,8 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
          totalErsattning += belopp;
          antalDagar++;
          LOGGER.info("[{}] Dag {} ({}): {} kr x {}% = {} kr",
-                 REGEL_NAMN, antalDagar, underlag.datum(),
-                 dagsersattning, underlag.omfattning(), belopp);
+               REGEL_NAMN, antalDagar, underlag.datum(),
+               dagsersattning, underlag.omfattning(), belopp);
       }
 
       LOGGER.info("[{}] TOTAL ERSATTNING: {} kr for {} dagar", REGEL_NAMN, totalErsattning, antalDagar);
@@ -246,37 +246,37 @@ public class RegelBeraknaErsattningService implements RegelMaskinellServiceInter
    private void loggaJuridiskGrund()
    {
       LOGGER.info("[{}] Juridisk grund: {} {} kap. {} paragraf {} st. {} p.",
-              REGEL_NAMN,
-              regelConfig.getLagrum().getForfattning(),
-              regelConfig.getLagrum().getKapitel(),
-              regelConfig.getLagrum().getParagraf(),
-              regelConfig.getLagrum().getStycke(),
-              regelConfig.getLagrum().getPunkt());
+            REGEL_NAMN,
+            regelConfig.getLagrum().getForfattning(),
+            regelConfig.getLagrum().getKapitel(),
+            regelConfig.getLagrum().getParagraf(),
+            regelConfig.getLagrum().getStycke(),
+            regelConfig.getLagrum().getPunkt());
       LOGGER.info("[{}] Regel-ID: {} v{}",
-              REGEL_NAMN,
-              regelConfig.getRegel().getId(),
-              regelConfig.getRegel().getVersion());
+            REGEL_NAMN,
+            regelConfig.getRegel().getId(),
+            regelConfig.getRegel().getVersion());
    }
 
    record ArbetsgivareData(
-           String arbetsgivare,
-           String organisationsnummer,
-           double specificeradLon)
+         String arbetsgivare,
+         String organisationsnummer,
+         double specificeradLon)
    {
    }
 
    record ErsattningUnderlag(
-           String id,
-           String datum,
-           int omfattning,
-           boolean beslutsutfallJa)
+         String id,
+         String datum,
+         int omfattning,
+         boolean beslutsutfallJa)
    {
    }
 
    record BerakningsResultat(
-           double totalErsattning,
-           int antalDagar,
-           double dagsersattning)
+         double totalErsattning,
+         int antalDagar,
+         double dagsersattning)
    {
    }
 }

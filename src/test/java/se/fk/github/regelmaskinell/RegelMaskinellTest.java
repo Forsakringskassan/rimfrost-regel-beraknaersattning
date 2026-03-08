@@ -32,17 +32,17 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 @QuarkusTest
 @QuarkusTestResource.List(
-        {
-                @QuarkusTestResource(WireMockTestResource.class)
-        })
+{
+      @QuarkusTestResource(WireMockTestResource.class)
+})
 public class RegelMaskinellTest
 {
    private static final String regelRequestsChannel = "regel-requests";
    private static final String regelResponsesChannel = "regel-responses";
 
    private static final ObjectMapper mapper = new ObjectMapper()
-           .registerModule(new JavaTimeModule())
-           .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+         .registerModule(new JavaTimeModule())
+         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
    private static WireMockServer wiremockServer;
 
@@ -127,10 +127,10 @@ public class RegelMaskinellTest
    public void testHealthEndpoint()
    {
       when()
-              .get("/q/health/live")
-              .then()
-              .statusCode(200)
-              .body("status", is("UP"));
+            .get("/q/health/live")
+            .then()
+            .statusCode(200)
+            .body("status", is("UP"));
    }
 
    // ========================================================================
@@ -139,12 +139,12 @@ public class RegelMaskinellTest
 
    @ParameterizedTest
    @CsvSource(
-           {
-                   "5367f6b8-cc4a-11f0-8de9-5367f6b11234,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-5367f6b13333,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-5367f6b12222,  Ja",
-                   "5367f6b8-cc4a-11f0-8de9-5367f6b14444,  Ja"
-           })
+   {
+         "5367f6b8-cc4a-11f0-8de9-5367f6b11234,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b13333,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b12222,  Ja",
+         "5367f6b8-cc4a-11f0-8de9-5367f6b14444,  Ja"
+   })
    void testRegelMaskinellEndToEnd(String handlaggningId, String expectedUtfall) throws Exception
    {
       System.out.printf("Starting testRegelMaskinellEndToEnd: %s%n", handlaggningId);
@@ -171,9 +171,9 @@ public class RegelMaskinellTest
       //
       assertNotNull(response.getData(), "Response data ska finnas");
       assertEquals(handlaggningId, response.getData().getHandlaggningId(),
-              "handlaggningId ska matcha request");
+            "handlaggningId ska matcha request");
       assertEquals(expectedUtfall, response.getData().getUtfall().getValue(),
-              "Utfall ska vara " + expectedUtfall);
+            "Utfall ska vara " + expectedUtfall);
 
       //
       // Verify CloudEvent fields
@@ -188,19 +188,19 @@ public class RegelMaskinellTest
       // Verify Kogito fields are propagated
       //
       assertEquals(request.getKogitoprocid(), response.getKogitoprocid(),
-              "kogitoprocid ska propageras fran request");
+            "kogitoprocid ska propageras fran request");
       assertEquals(request.getKogitorootprocid(), response.getKogitorootprocid(),
-              "kogitorootprocid ska propageras fran request");
+            "kogitorootprocid ska propageras fran request");
       assertEquals(request.getKogitoprocinstanceid(), response.getKogitoprocinstanceid(),
-              "kogitoprocinstanceid ska propageras fran request");
+            "kogitoprocinstanceid ska propageras fran request");
       assertEquals(request.getKogitoparentprociid(), response.getKogitoparentprociid(),
-              "kogitoparentprociid ska propageras fran request");
+            "kogitoparentprociid ska propageras fran request");
       assertEquals(request.getKogitorootprociid(), response.getKogitorootprociid(),
-              "kogitorootprociid ska propageras fran request");
+            "kogitorootprociid ska propageras fran request");
       assertEquals(request.getKogitoprocversion(), response.getKogitoprocversion(),
-              "kogitoprocversion ska propageras fran request");
+            "kogitoprocversion ska propageras fran request");
       assertEquals(request.getKogitoproctype(), response.getKogitoproctype(),
-              "kogitoproctype ska propageras fran request");
+            "kogitoproctype ska propageras fran request");
    }
 
    // ========================================================================
@@ -227,7 +227,7 @@ public class RegelMaskinellTest
       assertNotNull(response.getData().getUtfall(), "Utfall ska finnas");
       String utfallValue = response.getData().getUtfall().getValue();
       assertTrue(utfallValue.equals("Ja") || utfallValue.equals("Nej"),
-              "Utfall ska vara 'Ja' eller 'Nej', var: " + utfallValue);
+            "Utfall ska vara 'Ja' eller 'Nej', var: " + utfallValue);
    }
 
    @Test
@@ -248,6 +248,6 @@ public class RegelMaskinellTest
       var response = (RegelResponseMessagePayload) messages.getFirst().getPayload();
 
       assertEquals(handlaggningId, response.getData().getHandlaggningId(),
-              "handlaggningId ska matcha request");
+            "handlaggningId ska matcha request");
    }
 }

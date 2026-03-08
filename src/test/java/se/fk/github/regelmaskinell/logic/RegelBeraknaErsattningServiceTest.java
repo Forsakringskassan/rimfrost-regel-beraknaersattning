@@ -73,8 +73,8 @@ class RegelBeraknaErsattningServiceTest
    {
       var arbetsgivardata = new RegelBeraknaErsattningService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-02", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-21", 100, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-02", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-21", 100, true));
 
       var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
@@ -89,9 +89,9 @@ class RegelBeraknaErsattningServiceTest
    {
       var arbetsgivardata = new RegelBeraknaErsattningService.ArbetsgivareData("Test AB", "123456-7890", 50000.0);
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("3", "2025-08-03", 100, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("3", "2025-08-03", 100, true));
 
       var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
@@ -106,7 +106,7 @@ class RegelBeraknaErsattningServiceTest
    {
       var arbetsgivardata = new RegelBeraknaErsattningService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 50, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 50, true));
 
       var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
@@ -120,8 +120,8 @@ class RegelBeraknaErsattningServiceTest
    {
       var arbetsgivardata = new RegelBeraknaErsattningService.ArbetsgivareData("Test AB", "123456-7890", 40000.0);
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 50, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 50, true));
 
       var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
@@ -134,7 +134,7 @@ class RegelBeraknaErsattningServiceTest
    {
       var arbetsgivardata = new RegelBeraknaErsattningService.ArbetsgivareData("Test AB", "123456-7890", 0.0);
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true));
 
       var resultat = regelService.beraknaErsattning(underlag, arbetsgivardata);
 
@@ -165,8 +165,8 @@ class RegelBeraknaErsattningServiceTest
    void valideringBifall()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, true));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -178,8 +178,8 @@ class RegelBeraknaErsattningServiceTest
    void valideringEttUnderlagNej()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, false));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, true),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, false));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -192,8 +192,8 @@ class RegelBeraknaErsattningServiceTest
    void valideringAllaUnderlagNej()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, false),
-              new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, false));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 100, false),
+            new RegelBeraknaErsattningService.ErsattningUnderlag("2", "2025-08-02", 100, false));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -205,7 +205,7 @@ class RegelBeraknaErsattningServiceTest
    void valideringOgiltigOmfattningNoll()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 0, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 0, true));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -218,7 +218,7 @@ class RegelBeraknaErsattningServiceTest
    void valideringOgiltigOmfattningOver100()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 150, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 150, true));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -231,7 +231,7 @@ class RegelBeraknaErsattningServiceTest
    void valideringNegativOmfattning()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", -10, true));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", -10, true));
 
       var fel = regelService.valideraUnderlag(underlag);
 
@@ -243,7 +243,7 @@ class RegelBeraknaErsattningServiceTest
    void valideringFleraFelSammaUnderlag()
    {
       var underlag = List.of(
-              new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 0, false));
+            new RegelBeraknaErsattningService.ErsattningUnderlag("1", "2025-08-01", 0, false));
 
       var fel = regelService.valideraUnderlag(underlag);
 
