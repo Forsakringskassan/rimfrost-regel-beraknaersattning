@@ -9,7 +9,7 @@
   </parent>
 
   <groupId>com.example</groupId>
-  <artifactId>rimfrost-template-regel-maskinell</artifactId>
+  <artifactId>rimfrost-regel-berakna-ersattning</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
   <properties>
@@ -26,6 +26,11 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-health</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>se.fk.github.jaxrsclientfactory</groupId>
+      <artifactId>jaxrs-client-factory</artifactId>
+      <version>1.3.0</version>
     </dependency>
     <dependency>
       <groupId>se.fk.rimfrost.api.folkbokforing</groupId>
@@ -45,7 +50,7 @@
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
-      <version>2.5</version>
+      <version>2.6</version>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
@@ -55,6 +60,11 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5-mockito</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -70,21 +80,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <version>1.21.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
       <version>3.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>se.fk.rimfrost.framework.regel</groupId>
-      <artifactId>rimfrost-framework-regel-asyncapi</artifactId>
-      <version>0.0.0</version>
+      <groupId>se.fk.rimfrost.framework.regel.maskinell</groupId>
+      <artifactId>rimfrost-framework-regel-maskinell</artifactId>
+      <version>0.0.11</version>
+    </dependency>
+    <dependency>
+      <groupId>se.fk.rimfrost.framework.arbetsgivare</groupId>
+      <artifactId>rimfrost-framework-arbetsgivare-adapter</artifactId>
+      <version>0.1.0</version>
     </dependency>
     <dependency>
       <groupId>se.fk.rimfrost</groupId>
@@ -92,9 +101,9 @@
       <version>1.3.9</version>
     </dependency>
     <dependency>
-      <groupId>se.fk.rimfrost.framework.regel</groupId>
-      <artifactId>rimfrost-framework-regel</artifactId>
-      <version>0.1.3</version>
+      <groupId>se.fk.rimfrost.framework.folkbokford</groupId>
+      <artifactId>rimfrost-framework-folkbokford-adapter</artifactId>
+      <version>0.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.kie</groupId>

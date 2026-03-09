@@ -1,24 +1,23 @@
-# TODO: Adjust values to the correct ones for the rule
 uppgift:
   version: 1.0
   path: /regel/maskinell
-  aktivitet: "Bedömma rätten till"
+  aktivitet: "Beräkna ersättning för"
 
 specifikation:
   id: 494726b5-5122-4efc-8a5d-578dcd44df0f
   version: 1.0
-  namn: "Har kunden rätt till VAH?"
-  uppgiftbeskrivning: "Kontrollerar om personen är folkbokförd i Sverige samt om personen har ett jobb"
+  namn: "Beräkna ersättning för vård av husdjur"
+  uppgiftbeskrivning: "Beräknar ersättningsbelopp baserat på löneunderlag och antal dagar"
   verksamhetslogik: C
   roll: ANSVARIG_HANDLAGGARE
   applikationsId: 3.5.2
-  applikationsversion: kontroll_folkbokford_arbetsgivare_1.0
+  applikationsversion: vard_av_husdjur_1.0
 
 regel:
   id: caf86a5f-9776-4fce-a854-8d365fa75067
   version: 1.0
-  namn: "Har kunden arbetsgivare och är folkbokförd"
-  beskrivning: "Maskinell kontroll som kollar om kunden är folkbokförd i sverige samt kollar om personen har en arbetsgivare"
+  namn: "Beräkna ersättning för vård av husdjur"
+  beskrivning: "Beräknar 10% av specificerad lön per dag med godkänt ersättningsunderlag"
 
 lagrum:
   id: 6955bd9b-2019-4589-a460-7bcfd8a43eb5

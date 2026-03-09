@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/arbetsgivare/.*/specificerad-lon"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "personnummer": "19850101-1234",
+      "periodFrom": "2025-01-01",
+      "periodTom": "2025-01-28",
+      "lonesumma": 40000.0,
+      "lonerader": [
+        {"typ": "GRUNDLON", "belopp": 42000.0, "beskrivning": "Manadslon"},
+        {"typ": "TILLAGG", "belopp": 2000.0, "beskrivning": "OB-tillagg"},
+        {"typ": "AVDRAG", "belopp": -2000.0, "beskrivning": "Franvaro sjukdom"},
+        {"typ": "AVDRAG", "belopp": -2000.0, "beskrivning": "Franvaro VAB"}
+      ],
+      "organisation": {
+        "namn": "Region Dalarna",
+        "nummer": "123456-7890"
+      }
+    }
+  }
+}

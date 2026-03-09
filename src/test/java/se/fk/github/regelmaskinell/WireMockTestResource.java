@@ -27,7 +27,9 @@ public class WireMockTestResource implements QuarkusTestResourceLifecycleManager
                   .usingFilesUnderDirectory("src/test/resources"));
       server.start();
 
-      return new HashMap<>();
+      Map<String, String> config = new HashMap<>();
+      config.put("wiremock.server.url", "http://localhost:" + server.port());
+      return config;
    }
 
    @Override

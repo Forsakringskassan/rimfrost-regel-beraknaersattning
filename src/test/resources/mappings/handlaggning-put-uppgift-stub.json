@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "PUT",
+    "urlPathPattern": "/handlaggning/[^/]+"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "uppgift": {
+        "id": "88888888-8888-8888-8888-888888888888",
+        "handlaggningId": "11111111-1111-1111-1111-111111111111",
+        "version": "1.0",
+        "skapadTs": "2025-01-10T12:00:00+01:00",
+        "utfordTs": "2025-01-10T12:00:00+01:00",
+        "planeradTs": "2025-01-10T12:00:00+01:00",
+        "utforarId": null,
+        "uppgiftStatus": "AVSLUTAD",
+        "FSSAinformation": "HANDLAGGNING_PAGAR",
+        "uppgiftspecifikation": {
+          "id": "494726b5-5122-4efc-8a5d-578dcd44df0f",
+          "version": "1.0",
+          "namn": "Berakna ersattning for vard av husdjur",
+          "uppgiftbeskrivning": "Beraknar ersattningsbelopp baserat pa loneunderlag och antal dagar",
+          "verksamhetslogik": "C",
+          "roll": "ANSVARIG_HANDLAGGARE",
+          "applikationsId": "3.5.2",
+          "applikationsVersion": "vard_av_husdjur_1.0"
+        },
+        "underlag": []
+      }
+    }
+  }
+}
