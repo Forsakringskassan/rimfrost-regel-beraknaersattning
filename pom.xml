@@ -84,7 +84,7 @@
     <dependency>
       <groupId>se.fk.rimfrost.framework.regel</groupId>
       <artifactId>rimfrost-framework-regel-asyncapi</artifactId>
-      <version>0.0.0</version>
+      <version>0.0.2</version>
     </dependency>
     <dependency>
       <groupId>se.fk.rimfrost</groupId>
