@@ -99,7 +99,7 @@
     <dependency>
       <groupId>org.kie</groupId>
       <artifactId>kie-dmn-core</artifactId>
-      <version>10.1.0</version>
+      <version>10.2.0</version>
     </dependency>
   </dependencies>
 
