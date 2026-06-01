@@ -1,0 +1,85 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/handlaggning/.*"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "handlaggning": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "processinstansId": "22222222-2222-2222-2222-222222222222",
+        "version": "1.0",
+        "skapadTS": "2025-01-10T12:00:00+01:00",
+        "avslutadTS": null,
+        "yrkande": {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "formanstyp": "VAB",
+          "version": "1.0",
+          "yrkandedatum": "2025-01-10T12:00:00+01:00",
+          "yrkandestatus": "FASTSTALLT",
+          "andringsorsak": "",
+          "period": {
+            "start": "2025-01-10T12:00:00+01:00",
+            "slut": "2025-01-10T12:00:00+01:00"
+          },
+          "avsikt": "NY",
+          "yrkanderoll": [
+            {
+              "id": "44444444-4444-4444-4444-444444444444",
+              "individ": {
+                "id": "19850101-1234",
+                "fornamn": "Test",
+                "efternamn": "Testsson"
+              },
+              "roll": "AGARE",
+              "yrkande": true
+            }
+          ],
+          "ersattning": [
+            {
+              "id": "55555555-5555-5555-5555-555555555555",
+              "belopp": 40000,
+              "berakningsgrund": "LON",
+              "beloppstyp": "INKOMSTBASERAD",
+              "ersattningstyp": "HUNDBIDRAG",
+              "periodisering": "DAG",
+              "omfattning": 100,
+              "beslutsutfall": "JA",
+              "avslagsanledning": "",
+              "produceratResultat": {
+                "id": "66666666-6666-6666-6666-666666666666",
+                "version": "1.0",
+                "from": "2025-01-10T12:00:00+01:00",
+                "tom": "2025-01-10T12:00:00+01:00",
+                "status": "PLANERAT"
+              }
+            }
+          ]
+        },
+        "handlaggningspecifikation": {
+          "id": "77777777-7777-7777-7777-777777777777",
+          "version": "1.0",
+          "bpmn": "VAB",
+          "namn": "Vard av boskap",
+          "beskrivning": "Kollar om du har ratt for ersattning for vard av boskap",
+          "uppgiftspecifikation": [
+            {
+              "id": "494726b5-5122-4efc-8a5d-578dcd44df0f",
+              "version": "1.0",
+              "namn": "Berakna ersattning for vard av husdjur",
+              "uppgiftbeskrivning": "Beraknar ersattningsbelopp baserat pa loneunderlag och antal dagar",
+              "verksamhetslogik": "C",
+              "roll": "ANSVARIG_HANDLAGGARE",
+              "applikationsId": "3.5.2",
+              "applikationsVersion": "vard_av_husdjur_1.0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
